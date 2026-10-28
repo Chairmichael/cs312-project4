@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" type="image/x-icon" href="emoticion.png">
+  <title>Jeff's Place</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+  <div>
+
+    <div class="header">
+      <h1>Super cool blog</h1>
+    </div>
+
+    <div class="new-post-form">
+      <form action="/" method="post" id="postform">
+        <fieldset>
+          <legend> Create new post: </legend>
+          <div>
+            <input type="hidden" name="postId" form="postform" />
+            <label>
+              Username: <input name="username" form="postform" />
+            </label>
+            <label>
+              Title: <input name="title" form="postform" />
+            </label>
+            <label> Tag:
+              <select name="tags" form="postform">
+                <% post_tags.forEach(tag_category=> { %>
+                  <option value="<%= tag_category %>">
+                    <%= tag_category %>
+                  </option>
+                  <% }) %>
+              </select>
+            </label>
+            <br />
+            <label class="new-post-body-text-label">Body:</label>
+            <br />
+            <textarea rows="6" cols="80" name="body" form="postform" class="new-post-body-text"></textarea>
+            <br />
+            <button type="submit" form="postform" id="form-submit-btn">Submit</button>
+            <button type="submit" form="postform" id="form-submit-edit-btn" style="display: none;">Submit Edit</button>
+            <button type="button" form="postform" id="form-cancel-edit-btn" style="display: none;">Cancel Edit</button>
+            <span id="form-submit-error" style="color: brown; font-weight: bold; margin-left: 1rem;">
+              All fields required!
+            </span>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+
+    <div class="postFilterContainer">
+      <form action="" id="filter-posts-form">
+        <label>
+          <h4 style="margin: 1rem 1rem 0; display: inline-block;">Filter posts:</h4>
+          <select name="filterDropdown" id="filter-dropdown" form="postform">
+            <option value="All">All</option>
+            <% post_tags.forEach(tag_category=> { %>
+              <option value="<%= tag_category %>">
+                <%= tag_category %>
+              </option>
+              <% }) %>
+          </select>
+        </label>
+      </form>
+    </div>
+
+    <div class="post-list">
+      <% cards.forEach(card=> { %>
+        <div class="card" data-title="<%= card.title %>" data-tag="<%= card.tag %>"
+          data-creator-name="<%= card.creator_name %>" data-body="<%= card.body %>" data-id="<%= card.id %>">
+          <h2 style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+            <%= card.title %>
+              <span class="card-tag">
+                <%= card.tag %>
+              </span>
+              <span class="card-date"> posted
+                <%= card.date_created.toLocaleString('en-US', { dateStyle: 'medium' , timeStyle: 'short' }) %>
+              </span>
+          </h2>
+          <h4 style="margin-top: 0rem;">
+            <span style="font-weight: normal;">by</span> <i>
+              <%= card.creator_name %>
+            </i>
+          </h4>
+          <p>
+            <%= card.body %>
+          </p>
+          <a href="#" style="margin-right: 1rem" class="edit-post">Edit</a>
+          <a href="#" class="delete-post">Delete</a>
+        </div>
+        <% }) %>
+    </div>
+
+  </div>
+  <br>
+  <footer>
+    <p style="text-align: center; "><a href="https://github.com/Chairmichael/cs312-project3">cs312-project3</a></p>
+  </footer>
+  <script src="/script.js"></script>
+</body>
+
+</html>

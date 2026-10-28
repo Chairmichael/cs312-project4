@@ -1,0 +1,109 @@
+body {
+    font: 1em 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    padding: 1% 10%;
+    color: aliceblue;
+}
+
+
+html,
+body,
+textarea,
+input {
+    background-color: rgb(25, 26, 27);
+    color: aliceblue;
+}
+
+.header {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    margin-left: 1.5rem;
+}
+
+fieldset {
+    display: flex;
+    padding: 1rem 3rem;
+}
+
+input:disabled {
+    background-color: gray;
+    color: lightgray;
+}
+
+label {
+    margin-right: 1rem;
+}
+
+.new-post-form textarea {
+    margin-top: 0.5rem;
+}
+
+.new-post-form button {
+    margin-top: 0.5rem;
+}
+
+
+.new-post-form label input,
+.new-post-form label select {
+    margin-left: 0.5rem;
+    margin-bottom: 1rem;
+    /* padding: 0.5rem; */
+}
+
+.new-post-form label {
+    display: inline-flex;
+
+}
+
+.card {
+    padding: 1rem;
+    margin: 0.5rem 0;
+    background-color: rgb(18, 19, 20);
+    transition: background-color 0.25s ease;
+}
+
+.card:hover {
+    background-color: rgb(10, 10, 10);
+}
+
+.card a {
+    text-decoration: underline aliceblue;
+    color: aliceblue;
+}
+
+.card-tag {
+    margin-left: 1rem;
+    font-size: small;
+    font-weight: normal;
+    font-style: italic;
+}
+
+.card-date {
+    margin-left: 1rem;
+    font-size: small;
+    font-weight: normal;
+}
+
+.form-submit-error {
+    display: none;
+}
+
+
+@media (max-width: 480px) {
+    body {
+        padding: 1% 1%;
+    }
+
+    fieldset {
+        display: flex;
+        padding: 1rem 1rem;
+        width: auto;
+    }
+
+    .new-post-form textarea {
+        width: 100%;
+    }
+
+    .new-post-form label,
+    .new-post-form label input {
+        width: 100%;
+    }
+}
