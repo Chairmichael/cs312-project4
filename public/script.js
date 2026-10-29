@@ -36,9 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // create id if needed
-        if (!postId.value) {
-            postId.value = generateBlogId();
-        }
+        // if (!postId.value) {
+        //     postId.value = generateBlogId();
+        // }
 
         // reenable the username field so that it can be submitted
         usernameInput.disabled = false;
