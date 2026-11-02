@@ -1,21 +1,20 @@
-import { createBrowserRouter, RouterProvider } from 'react-router'
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 /* pages and layout */
 import Layout from './layout'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
-// import Connect from './pages/Connect'
+import Login from './pages/LoginPage'
 
 const router = createBrowserRouter([
   {
     path: '/',
     Component: Layout,
     children: [
-      { path: '/login', Component: Login },
-      { path: '/signup', Component: Signup },
+      { path: '/signin', element: <Login /> },
+      { path: '/signup', element: <Login formType="signup" /> },
+      { path: '/login', element: <Navigate to="/signin" replace /> },
     ],
   },
 ])
 
-export function AppRouter() {
+export default function AppRouter() {
   return <RouterProvider router={router} />;
 }
