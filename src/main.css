@@ -66,6 +66,7 @@ textarea {
 .signinup label {
     margin-left: 1rem;
     margin-bottom: 0.2rem;
+    user-select: none;
 }
 
 .signinup input,
