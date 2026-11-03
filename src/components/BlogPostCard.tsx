@@ -1,4 +1,4 @@
-interface BlogPost {
+export interface BlogPost {
   id: string;
   title: string;
   tag: string;
@@ -11,7 +11,7 @@ interface BlogPostCardProps {
   post: BlogPost;
 }
 
-export default function BlogPostCard({ post }: BlogPostCardProps) {
+export function BlogPostCard({ post }: BlogPostCardProps) {
   const dateCreated = new Date(post.date_created);
 
   return (

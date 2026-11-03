@@ -6,7 +6,7 @@ export default function Layout() {
   return (
     <div>
       <header className="site-header">
-        <nav className="site-nav" aria-label="Main navigation">
+        <nav className="site-nav" aria-label="Main navigation" style={{ marginBottom: '1rem' }}>
           <Link className="site-brand" to="/">Cool Blog</Link>
           {username ? (
             <span className="site-username">{username}</span>
