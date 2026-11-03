@@ -1,4 +1,5 @@
-import type { SubmitEvent } from "react";
+import { useState, type SubmitEvent } from "react";
+import axios from "axios";
 import { validateSignup } from "../util";
 
 
@@ -15,6 +16,8 @@ const fromIds = {
 
 export default function UserSignInUpForm({ formType }: UserSignInUpFormProps) {
   const isSignUp = formType === "signup";
+  const [showError, setShowError] = useState(false);
+  const [formErrorMessage, setFormErrorMessage] = useState('');
 
   function getSignupData() {
     return {
@@ -27,19 +30,45 @@ export default function UserSignInUpForm({ formType }: UserSignInUpFormProps) {
 
   function handleInputChange() {
     if (isSignUp) {
-      validateSignup(getSignupData());
+      setShowError(true);
+      setFormErrorMessage(validateSignup(getSignupData()));
+    } else {
+      setShowError(false);
     }
   }
 
-  function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const userSignupData = getSignupData();
-
+    let validationError = '';
     if (isSignUp) {
-      validateSignup(userSignupData);
-    } else {
+      validationError = validateSignup(userSignupData);
+    } else if (!userSignupData.username.trim() || !userSignupData.password) {
+      validationError = 'Username and password are required';
+    }
 
+    if (validationError) {
+      setShowError(true);
+      setFormErrorMessage(validationError);
+      return;
+    }
+
+    try {
+      await axios.post('/auth', {
+        action: formType,
+        username: userSignupData.username.trim(),
+        password: userSignupData.password,
+        fullname: userSignupData.fullname.trim(),
+      });
+      localStorage.setItem('username', userSignupData.username.trim());
+      window.location.assign('/');
+    } catch (error) {
+      const message = axios.isAxiosError(error) && typeof error.response?.data?.error === 'string'
+        ? error.response.data.error
+        : 'Unable to authenticate. Please try again.';
+      setFormErrorMessage(message);
+      setShowError(true);
     }
   }
 
@@ -48,7 +77,7 @@ export default function UserSignInUpForm({ formType }: UserSignInUpFormProps) {
     return element instanceof HTMLInputElement ? element.value : "";
   }
 
-  
+
   return (
     <form onSubmit={handleSubmit} className="signinup">
       <label htmlFor={fromIds.username}>Username:</label>
@@ -63,6 +92,7 @@ export default function UserSignInUpForm({ formType }: UserSignInUpFormProps) {
           <input type="text" id={fromIds.fullname} onChange={handleInputChange} />
         </>
       )}
+      {showError && <span style={{ color: 'brown' }}> {formErrorMessage} </span>}
       <button>{isSignUp ? "Sign Up" : "Sign In"}</button>
     </form>
   );

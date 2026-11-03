@@ -17,7 +17,9 @@ export default function Layout() {
           )}
         </nav>
       </header>
-      <Outlet />
+      <div className="page-content">
+        <Outlet />
+      </div>
       <footer />
     </div>
   );

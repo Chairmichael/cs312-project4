@@ -1,12 +1,15 @@
 import express from 'express';
 import { Client } from 'pg';
+import { pbkdf2 as pbkdf2Callback, randomBytes, timingSafeEqual } from 'node:crypto';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDirectory = path.join(__dirname, 'dist');
+const pbkdf2 = promisify(pbkdf2Callback);
 
 const client = new Client({
     user: 'postgres',
@@ -16,6 +19,7 @@ const client = new Client({
     database: 'BlogDB',
 });
 
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(distDirectory));
 
@@ -65,39 +69,38 @@ const post_tags = [
     'Tech', 'Lifestyle', 'Education', 'Hobby', 'Business'
 ];
 
-async function writePost(post) {
+async function writePost({ username, creatorUserID, title, body, tags, date_created }) {
     await client.query(
         `INSERT INTO blogs (creator_name, creator_user_id, title, body, date_created, tags)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [
-            post.creator_name,
-            post.creatorUserID,
-            post.title,
-            post.body,
-            post.date_created,
-            [post.tag],
+            username,
+            creatorUserID || username,
+            title,
+            body,
+            date_created || new Date(),
+            Array.isArray(tags) ? tags : [tags],
         ]
     );
 }
 
-async function updatePost(post) {
-    await client.query(
+async function updatePost({ postId, username, title, body, tags }) {
+    const result = await client.query(
         `UPDATE blogs
-         SET creator_name = $1,
-             title = $2,
-             body = $3,
-             tags = $4
-         WHERE creator_user_id = $5
-           AND date_created = $6`,
+         SET title = $1,
+             body = $2,
+             tags = $3
+         WHERE blog_id = $4 AND creator_user_id = $5`,
         [
-            post.creator_name,
-            post.title,
-            post.body,
-            [post.tag],
-            post.creatorUserID,
-            post.date_created,
+            title,
+            body,
+            Array.isArray(tags) ? tags : [tags],
+            postId,
+            username,
         ]
     );
+
+    return result.rowCount;
 }
 
 async function getAllPosts() {
@@ -123,6 +126,14 @@ async function getAllPosts() {
 async function seedDefaultPosts() {
     try {
         await client.connect();
+        await client.query(
+            `CREATE TABLE IF NOT EXISTS users (
+                username VARCHAR(24) PRIMARY KEY,
+                fullname TEXT NOT NULL,
+                password_salt CHAR(32) NOT NULL,
+                password_hash CHAR(64) NOT NULL
+            )`
+        );
 
         const existingRows = await client.query(
             `SELECT title, creator_user_id, body
@@ -140,7 +151,14 @@ async function seedDefaultPosts() {
         );
 
         for (const post of missingPosts) {
-            await writePost(post);
+            await writePost({
+                username: post.creatorUser,
+                creatorUserID: post.creatorUserID,
+                title: post.title,
+                body: post.body,
+                tags: post.tag,
+                date_created: post.date_created,
+            });
         }
 
         if (missingPosts.length > 0) {
@@ -153,53 +171,118 @@ async function seedDefaultPosts() {
     }
 }
 
-app.post('/', async (req, res) => {
-    const { username, title, tags, body, creatorUserID, date_created } = req.body;
+async function hashPassword(password, salt) {
+    return pbkdf2(password, salt, 100000, 32, 'sha256');
+}
 
-    const postDate = date_created ? new Date(date_created) : new Date();
-    const newPost = {
-        title,
-        body,
-        creator_name: username,
-        creatorUserID: creatorUserID || username,
-        tag: Array.isArray(tags) ? tags[0] : tags,
-        date_created: postDate,
-    };
+app.post('/auth', async (req, res) => {
+    const { action, username: rawUsername, password, fullname } = req.body ?? {};
+    const username = typeof rawUsername === 'string' ? rawUsername.trim() : '';
+
+    if (!['signin', 'signup'].includes(action) || !username || typeof password !== 'string') {
+        return res.status(400).json({ error: 'Username and password are required.' });
+    }
 
     try {
-        const existingPost = await client.query(
-            `SELECT 1
-             FROM blogs
-             WHERE creator_user_id = $1
-               AND date_created = $2`,
-            [newPost.creatorUserID, newPost.date_created]
-        );
+        if (action === 'signup') {
+            if (username.length < 3 || username.length > 24 || password.length < 10 ||
+                typeof fullname !== 'string' || !fullname.trim()) {
+                return res.status(400).json({ error: 'Signup details are invalid.' });
+            }
 
-        if (existingPost.rowCount > 0) {
-            await updatePost(newPost);
-            console.log('Updated existing post in database:', newPost);
-        } else {
-            await writePost(newPost);
-            console.log('Inserted new post into database:', newPost);
+            const salt = randomBytes(16);
+            const passwordHash = await hashPassword(password, salt);
+            try {
+                await client.query(
+                    `INSERT INTO users (username, fullname, password_salt, password_hash)
+                     VALUES ($1, $2, $3, $4)`,
+                    [username, fullname.trim(), salt.toString('hex'), passwordHash.toString('hex')]
+                );
+            } catch (error) {
+                if (error.code === '23505') {
+                    return res.status(409).json({ error: 'Username is already taken.' });
+                }
+                throw error;
+            }
+
+            return res.redirect(303, '/');
         }
+
+        const result = await client.query(
+            `SELECT fullname, password_salt, password_hash
+             FROM users
+             WHERE username = $1`,
+            [username]
+        );
+        if (result.rowCount === 0) {
+            return res.status(401).json({ error: 'Invalid username or password.' });
+        }
+
+        const user = result.rows[0];
+        const storedHash = Buffer.from(user.password_hash, 'hex');
+        const submittedHash = await hashPassword(password, Buffer.from(user.password_salt, 'hex'));
+        if (storedHash.length !== submittedHash.length || !timingSafeEqual(storedHash, submittedHash)) {
+            return res.status(401).json({ error: 'Invalid username or password.' });
+        }
+
+        return res.redirect(303, '/');
     } catch (error) {
-        console.error('Error syncing post to database:', error.message);
+        console.error('Authentication request failed:', error.message);
+        return res.status(500).json({ error: 'Authentication failed. Please try again.' });
     }
-
-    console.log(newPost);
-
-    res.redirect('/');
 });
 
-app.post('/delete', (req, res) => {
-    const postIndex = cards.findIndex((card) => card.id === req.body.postId);
+app.get('/posts', async (req, res) => {
+    try {
+        const posts = await getAllPosts();
+        res.json(posts);
+    } catch (error) {
+        console.error('Error retrieving posts from the database:', error.message);
+        res.status(500).json({ error: 'Failed to retrieve posts.' });
+    }
+});
 
-    if (postIndex !== -1) {
-        cards.splice(postIndex, 1);
+app.post('/submitpost', async (req, res) => {
+    const postData = req.body;
+    const postId = String(postData.postId ?? '').trim();
+
+    try {
+        if (postId) {
+            const updatedRows = await updatePost({ ...postData, postId });
+            if (updatedRows === 0) {
+                return res.status(404).json({ error: 'Post not found.' });
+            }
+            console.log('Updated existing post in database:', postData);
+        } else {
+            await writePost(postData);
+            console.log('Inserted new post into database:', postData);
+        }
+        res.status(postId ? 200 : 201).json({ success: true });
+    } catch (error) {
+        console.error('Error syncing post to database:', error.message);
+        res.status(500).json({ error: 'Failed to save post.' });
+    }
+});
+
+app.post('/delete', async (req, res) => {
+    const { postId, username } = req.body ?? {};
+    if (!postId || !username) {
+        return res.status(400).json({ error: 'Post ID and username are required.' });
     }
 
-    console.log(updatedPost);
-    res.sendStatus(204);
+    try {
+        const result = await client.query(
+            'DELETE FROM blogs WHERE blog_id = $1 AND creator_user_id = $2 RETURNING blog_id',
+            [postId, username]
+        );
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Post not found or not owned by this user.' });
+        }
+        return res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting post:', error.message);
+        return res.status(500).json({ error: 'Failed to delete post.' });
+    }
 });
 
 app.use((req, res, next) => {

@@ -2,12 +2,14 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 /* pages and layout */
 import Layout from './layout'
 import Login from './pages/LoginPage'
+import BlogPage from './pages/BlogPage'
 
 const router = createBrowserRouter([
   {
     path: '/',
     Component: Layout,
     children: [
+      { index: true, Component: BlogPage },
       { path: '/signin', element: <Login /> },
       { path: '/signup', element: <Login formType="signup" /> },
       { path: '/login', element: <Navigate to="/signin" replace /> },

@@ -3,15 +3,19 @@ export interface BlogPost {
   title: string;
   tag: string;
   creator_name: string;
+  creatorUserID: string;
   body: string;
   date_created: Date | string;
 }
 
 interface BlogPostCardProps {
   post: BlogPost;
+  canManage: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
-export function BlogPostCard({ post }: BlogPostCardProps) {
+export function BlogPostCard({ post, canManage, onEdit, onDelete }: BlogPostCardProps) {
   const dateCreated = new Date(post.date_created);
 
   return (
@@ -35,12 +39,16 @@ export function BlogPostCard({ post }: BlogPostCardProps) {
         <i>{post.creator_name}</i>
       </h4>
       <p>{post.body}</p>
-      <a href="#" style={{ marginRight: '1rem' }} className="edit-post">
-        Edit
-      </a>
-      <a href="#" className="delete-post">
-        Delete
-      </a>
+      {canManage && (
+        <>
+          <button type="button" onClick={onEdit} style={{ marginRight: '1rem' }}>
+            Edit
+          </button>
+          <button type="button" onClick={onDelete}>
+            Delete
+          </button>
+        </>
+      )}
     </div>
   );
 }

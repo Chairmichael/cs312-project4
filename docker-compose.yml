@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: abcde
+      POSTGRES_DB: BlogDB
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d BlogDB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro

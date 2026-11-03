@@ -1,5 +1,15 @@
 # React + TypeScript + Vite
 
+## Local PostgreSQL
+
+Start the database with Docker Compose:
+
+```sh
+docker compose up -d db
+```
+
+The container initializes the `BlogDB` database, required tables, and sample blog posts on first startup. Start the API with `npm start` and the frontend with `npm run dev` in separate terminals. No database volume is configured, so removing the container with `docker compose down` removes its data.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:
