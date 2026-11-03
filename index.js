@@ -1,8 +1,12 @@
-const express = require('express');
-const { Client } = require('pg');
+import express from 'express';
+import { Client } from 'pg';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const distDirectory = path.join(__dirname, 'dist');
 
 const client = new Client({
     user: 'postgres',
@@ -12,9 +16,8 @@ const client = new Client({
     database: 'BlogDB',
 });
 
-app.set('view engine', 'ejs');
-app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(distDirectory));
 
 const cards = [
     {
@@ -150,11 +153,6 @@ async function seedDefaultPosts() {
     }
 }
 
-app.get('/', async (req, res) => {
-    const posts = await getAllPosts();
-    res.render('index', { cards: posts, post_tags });
-});
-
 app.post('/', async (req, res) => {
     const { username, title, tags, body, creatorUserID, date_created } = req.body;
 
@@ -202,6 +200,18 @@ app.post('/delete', (req, res) => {
 
     console.log(updatedPost);
     res.sendStatus(204);
+});
+
+app.use((req, res, next) => {
+    if (req.method !== 'GET') {
+        return next();
+    }
+
+    res.sendFile(path.join(distDirectory, 'index.html'), (error) => {
+        if (error) {
+            next(error);
+        }
+    });
 });
 
 app.listen(PORT, async () => {
