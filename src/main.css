@@ -29,6 +29,11 @@ a {
     border-bottom: 1px solid #e5e7eb;
 }
 
+.site-username {
+    font-size: 1.35rem;
+    float: right;
+}
+
 .site-nav {
     display: flex;
     align-items: center;

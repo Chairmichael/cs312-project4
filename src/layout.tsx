@@ -9,7 +9,12 @@ export default function Layout() {
         <nav className="site-nav header" aria-label="Main navigation" style={{ marginBottom: '1rem' }}>
           <Link className="site-brand" to="/">Cool Blog</Link>
           {username ? (
-            <span className="site-username">{username}</span>
+            <div>
+              <span className="site-username">{username}</span>
+              <a style={{ marginRight: '0.5rem' }} className="site-auth-link" href="/" onClick={() => localStorage.removeItem('username')}>
+                Log out
+              </a>
+            </div>
           ) : (
             <Link className="site-auth-link" to="/signin">
               Log in / Sign up
